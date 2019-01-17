@@ -18,20 +18,33 @@
 
     
         <div id="test-6" class="test">
-            <h2>Frequency Control</h2>
-            <div class="epoch"></div>
+            <p id="headername">
+                Frequency Control
+            </p>
+            <h1>SCORE: </h1>
+            <div id="score" class="score">
+                <p>0</p>
+            </div>
+        <div class="mainchart">
+                <div class="epoch"></div>
+            </div>
+            <div class="demandchart">
+                <div class="epoch"></div>
+            </div>
+
             <p><button>Play</button></p>
         </div>
 
         <script>
         upper_frequency = 60.1
         lower_frequency = 59.9
+        var score = $('.test .score');
         //-------グラフ描写--------------------------------------------
         $(function draw_plot(){
             var data = [
                     {label: 'upper limit', values: []},
                     {label: 'lower limit', values: []},
-                    {label: 'C', values: []},
+                    {label: 'juyou', values: []},
                     {label: 'frequency', values: []}
                 ],
                 length = 45,
@@ -40,21 +53,35 @@
                 playing = false,
                 interval = null;
 
+            var data_demand = [
+                    {label: 'juyou', values: []},
+                    {label: 'frequency', values: []}
+                ],
+                length = 45,
+                nextIndex = length,
+                scale = 0.1,
+                playing = false,
+                interval = null;
+
+
+ 
+
             for (var i = 0; i < length; i++) {
                 var x = (i+1) * scale,
                 time = nextTime();
                 data[0].values.push({time: time, y:upper_frequency});
                 data[1].values.push({time: time, y:lower_frequency});
-                data[2].values.push({time: time, y:60});
+                data[2].values.push({time: time, y:60+0.1*Math.abs(Math.sin(time))});
                 data[3].values.push({time: time, y:0.5});
             }
 
-            var chart = $('#test-6 .epoch').epoch({
+            // Chart 1
+            var chart = $('#test-6 .mainchart .epoch').epoch({
                 type: 'time.line',
                 data: data,
-                axes: ['right', 'bottom'],
+                axes: ['right'],
                 range: {right: [59.7, 60.3]},
-                // 目盛りの書式
+                // format 
                 tickFormats: {
                     right: function (d) {
                         return d.toFixed(2);
@@ -62,15 +89,39 @@
                 }
             }) 
 
+            // Chart 2 
+            var chart_demand = $('#test-6 .demandchart .epoch').epoch({
+                type: 'time.area',
+                data: data_demand,
+                axes: ['right', 'bottom'],
+                range: {right: [59.7, 60.3]},
+                tickFormats: {
+                    right: function (d) {
+                        return d.toFixed(2);
+                    }
+                }
+            }) 
+
+
             var pushPoint = function() {
                 var x = (nextIndex +1) * scale,
                     time = nextTime();
                 chart.push([
                     { time: time, y:upper_frequency},
                     { time: time, y:lower_frequency},
-                    { time: time, y:60},
+                    { time: time, y:60+0.1*Math.abs(Math.sin(time))},
                     { time: time, y:60 + ($("#amount")[0].value / 100 - 0.5)}
                 ]);
+
+                chart_demand.push([
+                    { time: time, y:60+0.1*Math.abs(Math.sin(time))},
+                    { time: time, y:30+0.1*Math.abs(Math.cos(time))}
+                ]);
+
+                // Update score
+                var new_score = String(Number(score.text()) + 1);
+                score.text(new_score);
+                
                 nextIndex++;
             };
 
@@ -86,6 +137,7 @@
                 }
                 playing = !playing;
             });
+
         })
         </script>
 

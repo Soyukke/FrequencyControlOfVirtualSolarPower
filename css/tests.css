@@ -2,13 +2,33 @@ body {
     font-family: helvetica;
 }
 
-/* Default test chart height of 220px. */
-.test .epoch {
+.test #headername {
+    font-size: 250%;
+    text-align: center;
+}
+
+.test .mainchart .epoch{
     width: auto;
     height: 200px;
 }
+
+.test .demandchart .epoch{
+    width: auto;
+    height: 200px;
+}
+
 
 .broken {
     color: red;
 }
 
+.test .score{
+    font-size: 500%;
+    text-align: center;
+}
+
+
+input[type=range] {
+    margin: 0;
+    width: 100%;
+}
