@@ -1,18 +1,17 @@
 # Game for Social Change
 ## Title
-  Power system stability and control in using clean energy
+  Power system instability and control in using clean energy
   
 ## Concept
-  social issue : power system instability
-  purpose : 
-  game format : simulation (electricity) in internet browser
+  Social issue : Power system instability in using clean energy
+  Main purpose : Understanding importance of power adjustment
+  Sub  purpose : Adjustment of power generation of thermal power plant based on electricity supply and demand
+  Game format  : Simulation (electricity) in internet browser
   
 ## Aboub the game
-  who : all ages
-  how many : single-player 
-  how to play : operating is pushing button (up and down arrow key)
+  Who          : All ages
+  How many     : Single-player 
+  How to play  : Operating is pushing up and down arrow key
   
 ## Development method
-  Github
-  
-  
+  GitHub
