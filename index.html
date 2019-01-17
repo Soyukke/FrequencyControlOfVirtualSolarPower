@@ -1,1 +1,101 @@
-Hello World
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <!-- <link rel="stylesheet" type="text/css" href="epoch-0.8.4/tests/render/css/tests.css"> -->
+        <link rel="stylesheet" type="text/css" href="./tests.css">
+        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
+        <script src="./epoch-0.8.4/dist/js/epoch.js"></script>
+        <link rel="stylesheet" type="text/css" href="./epoch-0.8.4/dist/css/epoch.css">
+        <script>
+            var nextTime = (function() {
+                var currentTime = parseInt(new Date().getTime() / 1000);
+                return function() { return currentTime++; }
+            })();
+        </script>
+   </head>
+
+    
+        <div id="test-6" class="test">
+            <h2>Frequency Control</h2>
+            <div class="epoch"></div>
+            <p><button>Play</button></p>
+        </div>
+
+        <script>
+        upper_frequency = 60.1
+        lower_frequency = 59.9
+        //-------グラフ描写--------------------------------------------
+        $(function draw_plot(){
+            var data = [
+                    {label: 'upper limit', values: []},
+                    {label: 'lower limit', values: []},
+                    {label: 'C', values: []},
+                    {label: 'frequency', values: []}
+                ],
+                length = 45,
+                nextIndex = length,
+                scale = 0.1,
+                playing = false,
+                interval = null;
+
+            for (var i = 0; i < length; i++) {
+                var x = (i+1) * scale,
+                time = nextTime();
+                data[0].values.push({time: time, y:upper_frequency});
+                data[1].values.push({time: time, y:lower_frequency});
+                data[2].values.push({time: time, y:60});
+                data[3].values.push({time: time, y:0.5});
+            }
+
+            var chart = $('#test-6 .epoch').epoch({
+                type: 'time.line',
+                data: data,
+                axes: ['right', 'bottom'],
+                range: {right: [59.7, 60.3]},
+                // 目盛りの書式
+                tickFormats: {
+                    right: function (d) {
+                        return d.toFixed(2);
+                    }
+                }
+            }) 
+
+            var pushPoint = function() {
+                var x = (nextIndex +1) * scale,
+                    time = nextTime();
+                chart.push([
+                    { time: time, y:upper_frequency},
+                    { time: time, y:lower_frequency},
+                    { time: time, y:60},
+                    { time: time, y:60 + ($("#amount")[0].value / 100 - 0.5)}
+                ]);
+                nextIndex++;
+            };
+
+            $('#test-6 button').on('click', function(e) {
+                if (playing) {
+                    $(e.target).text('Play');
+                    clearInterval(interval);
+                }
+                else {
+                    $(e.target).text('Pause');
+                    interval = setInterval(pushPoint, 1000);
+                    pushPoint();
+                }
+                playing = !playing;
+            });
+        })
+        </script>
+
+
+
+        <form>
+        <div class="form-group">
+            <label for="amount">発電割合</label>
+            <input id="amount" type="range" class="amount-control-range" min="0" max="100">
+        </div>
+        </form>
+      </body>
+  </html>
