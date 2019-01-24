@@ -8,20 +8,14 @@
         <script src="./d3/d3.v3.js" charset="utf-8"></script>
         <script src="./epoch/js/epoch.js"></script>
         <link rel="stylesheet" type="text/css" href="./epoch/css/epoch.css">
-        <script>
-            var nextTime = (function() {
-                var currentTime = parseInt(new Date().getTime() / 1000);
-                return function() { return currentTime++; }
-            })();
-        </script>
-   </head>
+  </head>
 
     
         <div id="test-6" class="test">
             <p id="headername">
                 Frequency Control
             </p>
-            <h1>SCORE: </h1>
+            <p id="headerscore">SCORE</p>
             <div id="score" class="score">
                 <p>0</p>
             </div>
@@ -32,14 +26,105 @@
                 <div class="epoch"></div>
             </div>
 
-            <p><button>Play</button></p>
+            <p id="button"><button>Play</button></p>
+            <p><font color="red">RED: total supply</font>, <font color="blue">BLUE: demand</font>, <font color="green">GREEN: base supply</font> <font color="orange">ORANGE: solar supply</font></p>
         </div>
+        <form>
+        <div class="form-group">
+            <label for="amount">Rate</label>
+            <input id="amount" type="range" class="amount-control-range" min="0" max="100">
+        </div>
+        </form>
 
         <script>
-        upper_frequency = 60.1
-        lower_frequency = 59.9
-        var score = $('.test .score');
-        //-------グラフ描写--------------------------------------------
+        var delta_demand = 10;
+        var delta_base = 10;
+        var delta_solar = 20;
+        var rate = 0;
+        var base = 0;
+        var score = 0;
+
+        function reset(){
+            delta_demand = 10;
+            delta_base = 10;
+            delta_solar = 20;
+            rate = 0;
+            base = 0;
+            score = 0;
+        }
+        // time generator 
+        function* get_time(){
+            var current_time = 0;
+            while(true){
+                current_time = (current_time + 1) % 240;
+                yield current_time;
+            }
+        }
+        // demand generator
+        // range [0, 100]
+        // 1 tick +- 5 change
+        function* get_demand(){
+            var demand = Math.round( Math.random()*100 );
+            while(true){
+                demand = demand + Math.round(Math.random()*2*delta_demand) - delta_demand;
+                demand = Math.min(demand, 100);
+                demand = Math.max(demand, 0);
+                yield demand;
+            }
+        }
+
+        function* get_solar(){
+            // solar generator
+            // range [0, 100]
+            // 1 tick +- delta_solar 
+            var solar = Math.round( Math.random()*100 );
+            while(true){
+                solar = solar + Math.round(Math.random()*2*delta_solar) - delta_solar;
+                solar = Math.min(solar, 100);
+                solar = Math.max(solar, 0);
+                yield solar;
+            }
+        }
+
+        function get_base(prev_base, rate, solar, demand){
+            // base supply
+            // defference between demand and suppply
+            var difference = demand - (rate * solar + prev_base);
+            console.log('defference ' + String(difference));
+            // reduce the residual delta range [-delta_base, delta_base]
+            var delta = Math.sign(difference)*Math.min(Math.abs(difference), delta_base);
+            console.log('delta ' + String(delta));
+            // base range [0, inf]
+            var base = Math.max(prev_base+delta, 0);
+            return base;
+        }
+
+        function get_frequency(supply, demand){
+            // frequency 
+            // when supply > demand, frequency is increasing.
+            // supply < demand, frequency is decreasing.
+            delta_freqency = (supply - demand) / 100;
+            // this calculation is virtual. there is no physics.
+            return 60 + delta_freqency;
+        }
+
+        function get_score(frequency, supply, rate, solar){
+            // score
+            // The score is calculated by the small difference in frequency
+            // and the ratio of clean energy generation
+            score_frequency = 0.0001/Math.pow(Math.max(Math.abs(frequency-60), 0.01), 2);
+            score_clean = rate * solar / supply;
+            return Math.floor(100*score_frequency*score_clean);
+        }
+
+        current_time = get_time();
+        current_demand = get_demand();
+        current_solar = get_solar();
+
+        upper_frequency = 60.1;
+        lower_frequency = 59.9;
+        var field_score = $('.test .score');
+        // graph
         $(function draw_plot(){
             var data = [
                     {label: 'upper limit', values: []},
@@ -51,29 +136,21 @@
                 nextIndex = length,
                 scale = 0.1,
                 playing = false,
-                interval = null;
+                interval = null,
+                fps = 30;
 
             var data_demand = [
-                    {label: 'juyou', values: []},
-                    {label: 'frequency', values: []}
+                    {label: 'demand', values: []},
+                    {label: 'solar', values: []},
+                    {label: 'base', values: []},
+                    {label: 'solar and base', values: []}
                 ],
                 length = 45,
                 nextIndex = length,
                 scale = 0.1,
                 playing = false,
                 interval = null;
-
-
- 
-
-            for (var i = 0; i < length; i++) {
-                var x = (i+1) * scale,
-                time = nextTime();
-                data[0].values.push({time: time, y:upper_frequency});
-                data[1].values.push({time: time, y:lower_frequency});
-                data[2].values.push({time: time, y:60+0.1*Math.abs(Math.sin(time))});
-                data[3].values.push({time: time, y:0.5});
-            }
+                fps = 30;
 
             // Chart 1
             var chart = $('#test-6 .mainchart .epoch').epoch({
@@ -83,44 +160,68 @@
                 range: {right: [59.7, 60.3]},
                 // format 
                 tickFormats: {
-                    right: function (d) {
-                        return d.toFixed(2);
+                        right: function (d) {
+                        return String(d) + ' Hz';
                     }
                 }
             }) 
 
             // Chart 2 
             var chart_demand = $('#test-6 .demandchart .epoch').epoch({
-                type: 'time.area',
+                type: 'time.line',
                 data: data_demand,
                 axes: ['right', 'bottom'],
-                range: {right: [59.7, 60.3]},
+                range: {right: [0, 100]},
                 tickFormats: {
+                    bottom: function(d) {
+                        return String(d)
+                    },
                     right: function (d) {
-                        return d.toFixed(2);
+                        return String(d) + ' %';
                     }
                 }
             }) 
 
-
             var pushPoint = function() {
+                // update parameters
                 var x = (nextIndex +1) * scale,
-                    time = nextTime();
+                time = current_time.next().value;
+                demand = current_demand.next().value;
+                solar = current_solar.next().value;
+                // rate range [0, 2]
+                rate = $("#amount")[0].value / 50;
+                base = get_base(base, rate, solar, demand);
+                supply = rate*solar+base;
+                frequency = get_frequency(supply, demand);
+                score = score + get_score(frequency, supply, rate, solar)
+                console.log('time\t'+String(time));
+                console.log('base\t'+String(base));
+                console.log('rate\t'+String(rate));
+                console.log('solar\t'+String(solar));
+                console.log('demand\t'+String(demand));
+                console.log('supply\t'+String(supply));
+                console.log('frequency\t'+String(frequency));
+                console.log('score\t'+String(score));
+
+                // chart 1
                 chart.push([
                     { time: time, y:upper_frequency},
                     { time: time, y:lower_frequency},
-                    { time: time, y:60+0.1*Math.abs(Math.sin(time))},
-                    { time: time, y:60 + ($("#amount")[0].value / 100 - 0.5)}
+                    { time: time, y:frequency},
+                    { time: time, y:60}
                 ]);
 
+
+                // chart 2 
                 chart_demand.push([
-                    { time: time, y:60+0.1*Math.abs(Math.sin(time))},
-                    { time: time, y:30+0.1*Math.abs(Math.cos(time))}
+                    { time: time, y:demand},
+                    { time: time, y:rate*solar},
+                    { time: time, y:base},
+                    { time: time, y:supply}
                 ]);
 
                 // Update score
-                var new_score = String(Number(score.text()) + 1);
-                score.text(new_score);
+                field_score.text(score);
                 
                 nextIndex++;
             };
@@ -141,13 +242,5 @@
         })
         </script>
 
-
-
-        <form>
-        <div class="form-group">
-            <label for="amount">発電割合</label>
-            <input id="amount" type="range" class="amount-control-range" min="0" max="100">
-        </div>
-        </form>
-      </body>
+     </body>
   </html>
