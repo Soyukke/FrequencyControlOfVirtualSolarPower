@@ -1,5 +1,5 @@
 # Game for Social Change
-Lets play
+Let's play
 https://soyukke.github.io/FrequencyControlOfVirtualSolarPower/index.html
 ## Title
   Power system instability and control in using clean energy
