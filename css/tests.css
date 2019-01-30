@@ -72,5 +72,6 @@ input[type=range] {
 }
 .test p button{
     width: 90%;
-    height: 5%;
+    height: 40px;
+    font-size: 200%; 
 }

@@ -45,12 +45,16 @@
         var score = 0;
 
         function reset(){
+            time_limit = 60;
             delta_demand = 10;
             delta_base = 10;
             delta_solar = 20;
             rate = 0;
             base = 0;
             score = 0;
+            current_time = get_time();
+            current_demand = get_demand();
+            current_solar = get_solar();
         }
         // time generator 
         function* get_time(){
@@ -116,10 +120,6 @@
             score_clean = rate * solar / supply;
             return Math.floor(100*score_frequency*score_clean);
         }
-
-        current_time = get_time();
-        current_demand = get_demand();
-        current_solar = get_solar();
 
         upper_frequency = 60.1;
         lower_frequency = 59.9;
@@ -202,6 +202,15 @@
                 console.log('supply\t'+String(supply));
                 console.log('frequency\t'+String(frequency));
                 console.log('score\t'+String(score));
+                // left time
+                left_time = time_limit - time
+                if (left_time > 0 ){
+                    $('#test-6 button').text(String(left_time));
+                }
+                else{
+                    $('#test-6 button').text('Time Up!');
+                    $('#test-6 button').click();
+                }
 
                 // chart 1
                 chart.push([
@@ -210,7 +219,6 @@
                     { time: time, y:frequency},
                     { time: time, y:60}
                 ]);
-
 
                 // chart 2 
                 chart_demand.push([
@@ -233,6 +241,7 @@
                 }
                 else {
                     $(e.target).text('Pause');
+                    reset();
                     interval = setInterval(pushPoint, 1000);
                     pushPoint();
                 }
